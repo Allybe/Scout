@@ -15,7 +15,7 @@ import (
 	"golang.org/x/exp/slices"
 )
 
-// analyzeCmd represents the analyze command
+// analyzeCmd represents the 'analyze' command
 var analyzeCmd = &cobra.Command{
 	Use:   "analyze",
 	Short: "Analyzes the demo specified.",
@@ -29,7 +29,7 @@ var analyzeCmd = &cobra.Command{
 		teams := getDemoTeams(filePath)
 		teamKeys := utils.GetKeys(teams)
 
-		promptText := []string{}
+		var promptText []string
 		for i, team := range teamKeys {
 			teamMembers := teams[team]
 			promptText = append(promptText, fmt.Sprintf("Team %d | Players: ", team))
@@ -51,8 +51,8 @@ var analyzeCmd = &cobra.Command{
 		utils.CheckErrorm(err, "Failed to select team.")
 		fmt.Println("Ok.")
 
-		playersOnTeam := []*msg.CCSUsrMsg_EndOfMatchAllPlayersData_PlayerData{}
-		for i, _ := range teamKeys {
+		var playersOnTeam []*msg.CCSUsrMsg_EndOfMatchAllPlayersData_PlayerData
+		for i := range teamKeys {
 			if i == teamIndex {
 				playersOnTeam = teams[teamKeys[i]]
 			}
@@ -69,7 +69,8 @@ var analyzeCmd = &cobra.Command{
 func init() {
 	rootCmd.AddCommand(analyzeCmd)
 	analyzeCmd.PersistentFlags().String("demofile", "d", "The file path of the (.dem) demo file.")
-	analyzeCmd.MarkFlagRequired("demofile")
+	err := analyzeCmd.MarkFlagRequired("demofile")
+	utils.CheckError(err)
 }
 
 func getDemoTeams(demoPath string) map[int32][]*msg.CCSUsrMsg_EndOfMatchAllPlayersData_PlayerData {
@@ -91,6 +92,7 @@ func getDemoTeams(demoPath string) map[int32][]*msg.CCSUsrMsg_EndOfMatchAllPlaye
 
 	err = parser.ParseToEnd()
 	utils.CheckError(err)
+	err = parser.Close()
 
 	return teamList
 }
@@ -146,10 +148,8 @@ func startAnalysis(p []*msg.CCSUsrMsg_EndOfMatchAllPlayersData_PlayerData, demoP
 	parser.RegisterEventHandler(onSmokeStart)
 
 	err = parser.ParseToEnd()
-
-	if err != nil {
-		panic(err)
-	}
+	utils.CheckError(err)
+	err = parser.Close()
 
 	// CT
 	outFilePath := "C:/Users/allison/Codespaces/CS/DemoFiles/CT_radar_with_smokes.png"
