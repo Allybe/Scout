@@ -98,7 +98,8 @@ func getDemoTeams(demoPath string) map[int32][]*msg.CCSUsrMsg_EndOfMatchAllPlaye
 // Analysis stuff
 
 var (
-	points   []demo.Position
+	pointsCT []demo.Position
+	pointsT  []demo.Position
 	mapData  demo.Map
 	players  map[uint64]*msg.CCSUsrMsg_EndOfMatchAllPlayersData_PlayerData
 	mapName  string
@@ -112,13 +113,14 @@ func onSmokeStart(event events.SmokeStart) {
 	}
 
 	if _, ok := players[event.Thrower.SteamID64]; ok {
-		if event.Thrower.Team == 3 { // 2 t 3 ct
-			return
-		}
-
 		x, y := mapData.TranslateScale(event.Position.X, event.Position.Y)
-		points = append(points, demo.Position{PosX: x, PosY: y})
-		fmt.Printf("%s's threw smoke \n", playerName)
+		if event.Thrower.Team == 3 {
+			pointsCT = append(pointsCT, demo.Position{PosX: x, PosY: y})
+			fmt.Printf("CT: %s's threw smoke \n", playerName)
+		} else {
+			pointsT = append(pointsT, demo.Position{PosX: x, PosY: y})
+			fmt.Printf("T: %s's threw smoke \n", playerName)
+		}
 	}
 }
 
@@ -137,7 +139,8 @@ func startAnalysis(p []*msg.CCSUsrMsg_EndOfMatchAllPlayersData_PlayerData, demoP
 		mapFile := demo.GetMapFile(mapName)
 		radarImg = demo.GetImage(mapFile)
 		mapData = demo.GetMapData(mapName)
-		points = make([]demo.Position, 0)
+		pointsCT = make([]demo.Position, 0)
+		pointsT = make([]demo.Position, 0)
 	})
 
 	parser.RegisterEventHandler(onSmokeStart)
@@ -148,10 +151,22 @@ func startAnalysis(p []*msg.CCSUsrMsg_EndOfMatchAllPlayersData_PlayerData, demoP
 		panic(err)
 	}
 
-	outFilePath := "C:/Users/allison/Codespaces/CS/DemoFiles/radar_with_smokes.png"
-	fmt.Printf("Drawing %d smoke points to %s...\n", len(points), outFilePath)
+	// CT
+	outFilePath := "C:/Users/allison/Codespaces/CS/DemoFiles/CT_radar_with_smokes.png"
+	fmt.Printf("Drawing %d CT smoke points to %s...\n", len(pointsCT), outFilePath)
 
-	err = demo.DrawPointsAndSave(radarImg, points, outFilePath)
+	err = demo.DrawPointsAndSave(radarImg, pointsCT, outFilePath)
+	if err != nil {
+		fmt.Printf("Failed to save image: %v\n", err)
+	} else {
+		fmt.Println("Successfully saved radar image!")
+	}
+
+	// T
+	outFilePath = "C:/Users/allison/Codespaces/CS/DemoFiles/T_radar_with_smokes.png"
+	fmt.Printf("Drawing %d T smoke points to %s...\n", len(pointsT), outFilePath)
+
+	err = demo.DrawPointsAndSave(radarImg, pointsT, outFilePath)
 	if err != nil {
 		fmt.Printf("Failed to save image: %v\n", err)
 	} else {
